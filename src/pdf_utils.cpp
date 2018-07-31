@@ -97,7 +97,9 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 
             for (block = text->first_block; block; block = block->next) {
                 if (block->type == FZ_STEXT_BLOCK_TEXT) {
+                    std::cout << block->bbox.x0 << " - " << block->bbox.x1 << " - " << block->bbox.y0 << " - " << block->bbox.y1 << std::endl;
                     for (line = block->u.t.first_line; line; line = line->next) {
+                        std::cout << line->bbox.x0 << " - " << line->bbox.x1 << " - " << line->bbox.y0 << " - " << line->bbox.y1 << std::endl;
                         for (ch = line->first_char; ch; ch = ch->next) {
                             std::cout << UnicodeToUTF8(ch->c);
                         }
