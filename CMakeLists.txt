@@ -11,4 +11,4 @@ file(GLOB SOURCES "src/*.cpp")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} mupdf mupdfthird m)
+target_link_libraries(${PROJECT_NAME} mupdf mupdf-third m)
