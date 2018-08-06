@@ -1,6 +1,7 @@
 #include "pdf_utils.hpp"
 #include <mupdf/fitz.h>
 #include <iostream>
+#include <vector>
 
 inline std::string UnicodeToUTF8(int codepoint) {
     std::string out;
@@ -91,24 +92,31 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
             fz_drop_device(ctx, dev);
             dev = nullptr;
 
-            fz_stext_block* block;
-            fz_stext_line* line;
-            fz_stext_char* ch;
+            fz_stext_block *block = nullptr, *prev_block = nullptr;
+            fz_stext_line *line = nullptr, *prev_line = nullptr;
+            fz_stext_char *ch = nullptr, *prev_ch = nullptr;
 
             for (block = text->first_block; block; block = block->next) {
-                if (block->type == FZ_STEXT_BLOCK_TEXT) {
-//                    std::cout << block->bbox.x0 << " - " << block->bbox.x1 << " - " << block->bbox.y0 << " - " << block->bbox.y1 << std::endl;
+                if (block->type == FZ_STEXT_BLOCK_TEXT) { // only text blocks have lines, image blocks do not have lines
                     for (line = block->u.t.first_line; line; line = line->next) {
-//                        std::cout << line->bbox.x0 << " - " << line->bbox.x1 << " - " << line->bbox.y0 << " - " << line->bbox.y1 << std::endl;
                         for (ch = line->first_char; ch; ch = ch->next) {
+//                            std::cout << (void*)(ch) << " " << (void*)(prev_ch) << std::endl;
+                            std::cout << UnicodeToUTF8(ch->c) << " " << (prev_ch ? UnicodeToUTF8(prev_ch->c) : " ") << std::endl;
+
                             if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
-                                std::cout << UnicodeToUTF8(ch->c);
+                                UnicodeToUTF8(ch->c);
                             }
+
+                            prev_ch = ch;
                         }
                         std::cout << std::endl;
+
+                        prev_line = line;
                     }
                     std::cout << std::endl;
                 }
+
+                prev_block = block;
             }
 
         } fz_always(ctx) {
