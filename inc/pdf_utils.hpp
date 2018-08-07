@@ -3,10 +3,9 @@
 #include <string>
 #include <optional>
 #include <list>
-extern "C" {
-#include <mupdf/fitz/geometry.h>
-#include <mupdf/fitz/font.h>
-}
+
+#include <mupdf/fitz.h>
+
 #ifndef TITLE_FORMAT_INDENT_DELTA
 #define TITLE_FORMAT_INDENT_DELTA 1.0
 #endif

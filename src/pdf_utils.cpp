@@ -1,5 +1,4 @@
 #include "pdf_utils.hpp"
-#include <mupdf/fitz.h>
 #include <iostream>
 #include <vector>
 
@@ -188,7 +187,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 //                            std::cout << UnicodeToUTF8(ch->c) << " " << (prev_ch ? UnicodeToUTF8(prev_ch->c) : " ") << std::endl;
 
                             if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
-                                UnicodeToUTF8(ch->c);
+                                std::cout << UnicodeToUTF8(ch->c);
                             }
 
                             prev_ch = ch;
