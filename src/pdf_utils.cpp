@@ -2,6 +2,7 @@
 #include "string_utils.hpp"
 #include <iostream>
 #include <vector>
+#include <regex>
 #include <sstream>
 
 PDF_Title_Format::PDF_Title_Format() :
@@ -151,13 +152,10 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
             fz_drop_device(ctx, dev);
             dev = nullptr;
 
-            std::stringstream partial_paragraph_content_string_stream;
-            std::stringstream emphasized_word_string_stream;
-            bool parsing_emphasized_word = false;
             fz_stext_block* block = nullptr, *prev_block = nullptr, *next_block = nullptr;
             fz_stext_line* line = nullptr, *prev_line = nullptr, *next_line = nullptr;
             fz_stext_char* ch = nullptr, *prev_ch = nullptr, *next_ch = nullptr;
-            fz_font *prev_ch_font = nullptr;
+            fz_font* prev_ch_font = nullptr;
 
             for (block = text->first_block; block; block = block->next) {
                 next_block = block->next;
@@ -167,6 +165,9 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                     std::optional<std::string> title_prefix = std::nullopt;
                     std::optional<fz_font*> title_font = std::nullopt;
                     std::optional<double> title_indent = std::nullopt, title_baseline = std::nullopt;
+                    std::stringstream partial_paragraph_content_string_stream;
+                    std::stringstream emphasized_word_string_stream;
+                    bool parsing_emphasized_word = false;
 
                     for (line = block->u.t.first_line; line; line = line->next) {
                         next_line = line->next;
@@ -178,7 +179,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 
                             // linhlt: temporary fix
                             if (character.compare("“") == 0 ||
-                                character.compare("”") == 0 ) {
+                                character.compare("”") == 0) {
                                 character = "\"";
                             }
 
@@ -245,8 +246,59 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                         text_block_information.emphasized_words.push_back(trimmed_string);
                     }
 
-                    if (!text_block_information.emphasized_words.empty()) {
-                        std::cout << text_block_information.emphasized_words.front() << std::endl;
+
+//                    std::cout << "Emphasized words: ";
+//                    for (auto it = text_block_information.emphasized_words.begin(); it != text_block_information.emphasized_words.end(); ++it ) {
+//                        std::cout << "\"" << *it << "\", ";
+//                    }
+//                    std::cout << "\nContent: " << text_block_information.partial_paragraph_content << std::endl;
+//                    std::cout << "---------------------------------------------------------" << std::endl;
+
+
+
+
+                    if (!text_block_information.emphasized_words.empty() &&
+                        text_block_information.emphasized_words.front().length() < TITLE_MAX_LENGTH) {
+                        std::smatch title_prefix_match_result;
+
+                        if (title_prefix) {
+                            // case 1: prefix is in following format: bullet/numbering space single/double quote
+                            // step 1: find first word, using regex to match, check if it is bullet or numbering
+                            unsigned int pos = 0;
+                            std::string_view title_prefix_view(title_prefix.value());;
+                            size_t p_length = title_prefix_view.length();
+                            for (unsigned int i = 0; i < p_length; ++i) {
+                                if (std::isspace(title_prefix_view[i])) {
+                                    pos = i;
+                                    break;
+                                }
+                            }
+
+                            if (pos > 0) {
+                                // check if the rest is single quouted
+                            } else { // no space in prefix
+                                if (title_prefix_view.compare("'") == 0 &&
+                                    text_block_information.partial_paragraph_content[text_block_information.emphasized_words.front().length() + 1] == '\'') {
+                                    PDF_Title_Format title_format;
+                                    title_format.prefix = PDF_Title_Format::PREFIX::NONE;
+                                    title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::SINGLE_QUOTE;
+                                    text_block_information.title_format = std::move(title_format);
+                                } else if (title_prefix_view.compare("\"") == 0 &&
+                                           text_block_information.partial_paragraph_content[text_block_information.emphasized_words.front().length() + 1] == '\"') {
+                                    PDF_Title_Format title_format;
+                                    title_format.prefix = PDF_Title_Format::PREFIX::NONE;
+                                    title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::DOUBLE_QUOTE;
+                                    text_block_information.title_format = std::move(title_format);
+                                }
+                            }
+
+                            if (text_block_information.title_format) {
+                                text_block_information.partial_paragraph_content.erase(0, text_block_information.emphasized_words.front().length() + title_prefix_view.length());
+                                if (text_block_information.title_format->emphasize_style > PDF_Title_Format::EMPHASIZE_STYLE::NONE) {
+                                    text_block_information.partial_paragraph_content.erase(0, 1); // single or double quote, so remove extra one more character
+                                }
+                            }
+                        }
                     }
                 }
 
