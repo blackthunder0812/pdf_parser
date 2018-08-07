@@ -18,7 +18,7 @@ struct PDF_Title_Format {
         static const double INDENT_DELTA_THRESHOLD;
         enum class CASE {ALL_UPPER, FIRST_ONLY_UPPER};
         enum class PREFIX {NONE, BULLET, ROMAN_NUMBERING, NUMBER_DOT_NUMBERING, ALPHABET_NUMBERING};
-        enum class EMPHASIZE_STYLE {NONE, DOUBLE_QUOTE};
+        enum class EMPHASIZE_STYLE {NONE, SINGLE_QUOTE, DOUBLE_QUOTE};
 
         fz_font *title_font;
         CASE title_case = CASE::FIRST_ONLY_UPPER;
