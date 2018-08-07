@@ -75,7 +75,5 @@ struct PDF_Document {
     std::list<PDF_Section> sections;
 };
 
-// convert Unicode character to UTF-8 encoded string
-inline std::string UnicodeToUTF8(int codepoint);
-
+// return nullopt if cant read pdf document
 std::optional<PDF_Document> parse_pdf_file(std::string file_path);
