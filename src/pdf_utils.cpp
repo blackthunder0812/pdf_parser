@@ -268,6 +268,14 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                 PDF_Title_Format title_format;
                                 bool has_title_format = true;
 
+                                if (text_block_information.emphasized_words.front().compare("Payments") == 0) {
+                                    std::cout << "Break point";
+                                    std::cout << "Break point";
+                                    std::cout << "Break point";
+                                    std::cout << "Break point";
+                                    std::cout << "Break point";
+                                }
+
                                 // bullet match
                                 if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("[•\\*\\+\\-]"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::BULLET;
