@@ -3,10 +3,41 @@
 #include <string>
 #include <optional>
 #include <list>
+extern "C" {
 #include <mupdf/fitz/geometry.h>
+#include <mupdf/fitz/font.h>
+}
+#ifndef TITLE_FORMAT_INDENT_DELTA
+#define TITLE_FORMAT_INDENT_DELTA 1.0
+#endif
+
+#ifndef TITLE_MAX_LENGTH
+#define TITLE_MAX_LENGTH 200
+#endif
 
 struct PDF_Title_Format {
+        static const double INDENT_DELTA_THRESHOLD;
+        enum class CASE {ALL_UPPER, FIRST_ONLY_UPPER};
+        enum class PREFIX {NONE, BULLET, ROMAN_NUMBERING, NUMBER_DOT_NUMBERING, ALPHABET_NUMBERING};
+        enum class EMPHASIZE_STYLE {NONE, DOUBLE_QUOTE};
 
+        fz_font *title_font;
+        CASE title_case = CASE::FIRST_ONLY_UPPER;
+        PREFIX prefix = PREFIX::NONE;
+        EMPHASIZE_STYLE emphasize_style = EMPHASIZE_STYLE::NONE;
+        unsigned long numbering_level = 0;
+        bool same_line_with_content = true;
+        double indent = 0;
+
+        PDF_Title_Format();
+        PDF_Title_Format(const PDF_Title_Format& other);
+        PDF_Title_Format(PDF_Title_Format&& other);
+        PDF_Title_Format& operator=(const PDF_Title_Format& other);
+        PDF_Title_Format& operator=(PDF_Title_Format&& other);
+        bool operator==(const PDF_Title_Format& title_format);
+        bool operator!=(const PDF_Title_Format& title_format);
+
+        friend std::ostream& operator<<(std::ostream& os, const PDF_Title_Format& tf);
 };
 
 struct PDF_Paragraph {
