@@ -2,6 +2,7 @@
 #include "string_utils.hpp"
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 PDF_Title_Format::PDF_Title_Format() :
     title_font(nullptr) {
@@ -150,34 +151,103 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
             fz_drop_device(ctx, dev);
             dev = nullptr;
 
+            std::stringstream partial_paragraph_content_string_stream;
+            std::stringstream emphasized_word_string_stream;
+            bool parsing_emphasized_word = false;
             fz_stext_block* block = nullptr, *prev_block = nullptr, *next_block = nullptr;
             fz_stext_line* line = nullptr, *prev_line = nullptr, *next_line = nullptr;
             fz_stext_char* ch = nullptr, *prev_ch = nullptr, *next_ch = nullptr;
+            fz_font *prev_ch_font = nullptr;
 
             for (block = text->first_block; block; block = block->next) {
                 next_block = block->next;
 
                 if (block->type == FZ_STEXT_BLOCK_TEXT) { // only text blocks have lines, image blocks do not have lines
+                    TextBlockInformation text_block_information;
+                    std::optional<std::string> title_prefix = std::nullopt;
+                    std::optional<fz_font*> title_font = std::nullopt;
+                    std::optional<double> title_indent = std::nullopt, title_baseline = std::nullopt;
+
                     for (line = block->u.t.first_line; line; line = line->next) {
                         next_line = line->next;
 
                         for (ch = line->first_char; ch; ch = ch->next) {
                             next_ch = ch->next;
 
-//                            std::cout << (void*)(ch) << " " << (void*)(prev_ch) << std::endl;
-//                            std::cout << UnicodeToUTF8(ch->c) << " " << (prev_ch ? UnicodeToUTF8(prev_ch->c) : " ") << std::endl;
+                            std::string character = UnicodeToUTF8(ch->c);
 
-                            if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
-                                std::cout << UnicodeToUTF8(ch->c);
+                            // linhlt: temporary fix
+                            if (character.compare("“") == 0 ||
+                                character.compare("”") == 0 ) {
+                                character = "\"";
                             }
 
+                            if (prev_ch_font && parsing_emphasized_word) {  // just need to compare to font of previous character
+                                if (ch->font == prev_ch_font) { // same as previous character, continue to add to emphasized word
+                                    emphasized_word_string_stream << character;
+                                } else {
+                                    // add emphasized word to list
+                                    std::string trimmed_string = trim_copy(emphasized_word_string_stream.str());
+                                    if (trimmed_string.length() > 0) {
+                                        text_block_information.emphasized_words.push_back(trimmed_string);
+                                    }
+                                    // reset string stream
+                                    emphasized_word_string_stream.str(std::string());
+                                    parsing_emphasized_word = false;
+
+                                    if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
+                                        parsing_emphasized_word = true;
+                                        emphasized_word_string_stream << character;
+                                    }
+                                }
+                            } else {
+                                if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
+                                    parsing_emphasized_word = true;
+                                    // first time this occured
+                                    if (!title_prefix) {
+                                        if (!title_font) {
+                                            title_font = ch->font;
+                                        }
+
+                                        if (!partial_paragraph_content_string_stream.str().empty() &&
+                                            text_block_information.emphasized_words.empty()) {
+                                            title_prefix = partial_paragraph_content_string_stream.str();
+                                        }
+                                    }
+                                    emphasized_word_string_stream << character;
+                                } else if (parsing_emphasized_word) { // end of parsing emphasized word
+                                    std::string trimmed_string = trim_copy(emphasized_word_string_stream.str());
+                                    if (trimmed_string.length() > 0) {
+                                        text_block_information.emphasized_words.push_back(trimmed_string);
+                                    }
+                                    emphasized_word_string_stream.str(std::string());
+                                    parsing_emphasized_word = false;
+                                }
+                            }
+
+                            // add character to partial paragraph content
+                            partial_paragraph_content_string_stream << character;
+
+                            prev_ch_font = ch->font;
+
                             prev_ch = ch;
-                        }
-                        std::cout << std::endl;
+                        };
 
                         prev_line = line;
                     }
-                    std::cout << std::endl;
+
+                    text_block_information.partial_paragraph_content = partial_paragraph_content_string_stream.str();
+
+                    // if emphasized_word is in the end of partial_paragraph
+                    std::string trimmed_string = trim_copy(emphasized_word_string_stream.str());
+                    if (parsing_emphasized_word &&
+                        trimmed_string.length() > 0) {
+                        text_block_information.emphasized_words.push_back(trimmed_string);
+                    }
+
+                    if (!text_block_information.emphasized_words.empty()) {
+                        std::cout << text_block_information.emphasized_words.front() << std::endl;
+                    }
                 }
 
                 prev_block = block;

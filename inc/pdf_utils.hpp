@@ -75,5 +75,11 @@ struct PDF_Document {
     std::list<PDF_Section> sections;
 };
 
+struct TextBlockInformation {
+    std::optional<PDF_Title_Format> title_format;
+    std::list<std::string> emphasized_words;
+    std::string partial_paragraph_content;
+};
+
 // return nullopt if cant read pdf document
 std::optional<PDF_Document> parse_pdf_file(std::string file_path);
