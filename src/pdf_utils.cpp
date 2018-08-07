@@ -246,17 +246,6 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                         text_block_information.emphasized_words.push_back(trimmed_string);
                     }
 
-
-//                    std::cout << "Emphasized words: ";
-//                    for (auto it = text_block_information.emphasized_words.begin(); it != text_block_information.emphasized_words.end(); ++it ) {
-//                        std::cout << "\"" << *it << "\", ";
-//                    }
-//                    std::cout << "\nContent: " << text_block_information.partial_paragraph_content << std::endl;
-//                    std::cout << "---------------------------------------------------------" << std::endl;
-
-
-
-
                     if (!text_block_information.emphasized_words.empty() &&
                         text_block_information.emphasized_words.front().length() < TITLE_MAX_LENGTH) {
                         std::smatch title_prefix_match_result;
@@ -275,7 +264,46 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             }
 
                             if (pos > 0) {
-                                // check if the rest is single quouted
+                                std::string first_word_title_prefix_view(title_prefix_view.substr(0, pos));
+                                PDF_Title_Format title_format;
+                                bool has_title_format = true;
+
+                                // bullet match
+                                if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("[•\\*\\+\\-]"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::BULLET;
+                                } // numbering using latin characters (a) (b) (c)
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([a-z]{2}\\)"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::ALPHABET_LOWERCASE_NUMBERING;
+                                }  // numbering using latin characters (A) (B) (C)
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([A-Z]{2}\\)"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::ALPHABET_UPPERCASE_NUMBERING;
+                                } // numbering using roman numerals (i), longest presentation might be (xviii)
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([ivx]{1,5}\\)"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::ROMAN_NUMBERING;
+                                } // numbering using number with dots ex 1 2 3 or 1. 2. 3. or 1.1 1.2 1.3 or 1.1. 1.2. 1.3.
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\d+(\\.\\d+)*\\.?"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::NUMBER_DOT_NUMBERING;
+                                } else { // not bullet or numbering
+                                    has_title_format = false;
+                                }
+
+                                // check if the rest is single/double quouted
+                                std::string_view the_rest_title_prefix_view(title_prefix_view.substr(pos + 1, p_length - pos));
+                                if (the_rest_title_prefix_view.empty()) {
+                                    title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::NONE;
+                                } else if (the_rest_title_prefix_view.compare("'") == 0 &&
+                                           text_block_information.partial_paragraph_content[text_block_information.emphasized_words.front().length() + title_prefix_view.length()] == '\'') {
+                                    title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::SINGLE_QUOTE;
+                                } else if (the_rest_title_prefix_view.compare("\"") == 0 &&
+                                           text_block_information.partial_paragraph_content[text_block_information.emphasized_words.front().length() + title_prefix_view.length()] == '\"') {
+                                    title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::DOUBLE_QUOTE;
+                                } else {
+                                    has_title_format = false;
+                                }
+
+                                if (has_title_format) {
+                                    text_block_information.title_format = std::move(title_format);
+                                }
                             } else { // no space in prefix
                                 if (title_prefix_view.compare("'") == 0 &&
                                     text_block_information.partial_paragraph_content[text_block_information.emphasized_words.front().length() + 1] == '\'') {
@@ -298,8 +326,47 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                     text_block_information.partial_paragraph_content.erase(0, 1); // single or double quote, so remove extra one more character
                                 }
                             }
+                        }  else {
+                            // case 2: no prefix: first emphasize word is in begining of the block, the character after first emphasized word must be colon or space
+                            size_t pos = text_block_information.emphasized_words.front().length();
+                            size_t p_length = text_block_information.partial_paragraph_content.length();
+                            if (pos == p_length) {
+                                PDF_Title_Format title_format;
+                                title_format.prefix = PDF_Title_Format::PREFIX::NONE;
+                                title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::NONE;
+                                title_format.same_line_with_content = false;
+                                text_block_information.title_format = std::move(title_format);
+
+                                // cut title out of content
+                                text_block_information.partial_paragraph_content = "";
+                            } else if (pos < p_length &&
+                                       (text_block_information.partial_paragraph_content[pos] == ' ' ||
+                                        text_block_information.partial_paragraph_content[pos] == ':' ||
+                                        text_block_information.partial_paragraph_content[pos] == '.')) {
+                                PDF_Title_Format title_format;
+                                title_format.prefix = PDF_Title_Format::PREFIX::NONE;
+                                title_format.emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::NONE;
+                                text_block_information.title_format = std::move(title_format);
+
+                                // cut title out of content
+                                text_block_information.partial_paragraph_content.erase(0, pos + 1);
+                            }
                         }
                     }
+
+
+
+
+
+                    std::cout << "Emphasized words: ";
+                    for (auto it = text_block_information.emphasized_words.begin(); it != text_block_information.emphasized_words.end(); ++it ) {
+                        std::cout << "\"" << *it << "\", ";
+                    }
+                    std::cout << "\nContent: " << text_block_information.partial_paragraph_content << std::endl;
+                    std::cout << "\n---------------------------------------------------------\n" << std::endl;
+
+
+
                 }
 
                 prev_block = block;
