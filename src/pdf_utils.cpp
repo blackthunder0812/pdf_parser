@@ -274,10 +274,10 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                 if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("•|[\\*\\+\\-]"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::BULLET;
                                 } // numbering using latin characters (a) (b) (c)
-                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([a-z]{2}\\)"))) {
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([a-z]{1,2}\\)"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::ALPHABET_LOWERCASE_NUMBERING;
                                 }  // numbering using latin characters (A) (B) (C)
-                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([A-Z]{2}\\)"))) {
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([A-Z]{1,2}\\)"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::ALPHABET_UPPERCASE_NUMBERING;
                                 } // numbering using roman numerals (i), longest presentation might be (xviii)
                                 else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([ivx]{1,5}\\)"))) {
@@ -355,6 +355,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             }
                         }
                     }
+                    trim(text_block_information.partial_paragraph_content);
 
 
 
