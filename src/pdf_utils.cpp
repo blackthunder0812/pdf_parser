@@ -184,7 +184,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             }
 
                             if (prev_ch_font && parsing_emphasized_word) {  // just need to compare to font of previous character
-                                if (ch->font == prev_ch_font) { // same as previous character, continue to add to emphasized word
+                                if (ch->font == prev_ch_font || isspace(ch->c)) { // same as previous character, continue to add to emphasized word
                                     emphasized_word_string_stream << character;
                                 } else {
                                     // add emphasized word to list
@@ -229,7 +229,9 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             // add character to partial paragraph content
                             partial_paragraph_content_string_stream << character;
 
-                            prev_ch_font = ch->font;
+                            if (!isspace(ch->c)) {
+                                prev_ch_font = ch->font;
+                            }
 
                             prev_ch = ch;
                         };
