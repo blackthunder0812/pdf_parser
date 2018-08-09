@@ -234,7 +234,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             }
 
                             prev_ch = ch;
-                        };
+                        }
 
                         prev_line = line;
                     }
@@ -280,12 +280,16 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                 else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([A-Z]{1,2}\\)"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::ALPHABET_UPPERCASE_NUMBERING;
                                 } // numbering using roman numerals (i), longest presentation might be (xviii)
-                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([ivx]{1,5}\\)"))) {
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([ivx]{1,6}\\)"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::ROMAN_NUMBERING;
                                 } // numbering using number with dots ex 1 2 3 or 1. 2. 3. or 1.1 1.2 1.3 or 1.1. 1.2. 1.3.
                                 else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\d+(\\.\\d+)*\\.?"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::NUMBER_DOT_NUMBERING;
-                                } else { // not bullet or numbering
+                                } // article numbering A/a/An/an/The/the
+                                else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("[Aa]n?|[Tt]he"))) {
+                                    title_format.prefix = PDF_Title_Format::PREFIX::ARTICLE;
+                                }
+                                else { // not bullet or numbering
                                     has_title_format = false;
                                 }
 
