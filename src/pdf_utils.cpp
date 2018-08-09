@@ -60,7 +60,8 @@ bool PDF_Title_Format::operator==(const PDF_Title_Format& title_format) {
            prefix == title_format.prefix &&
            emphasize_style == title_format.emphasize_style &&
            numbering_level == title_format.numbering_level &&
-           !(same_line_with_content ^ title_format.same_line_with_content);
+           !(same_line_with_content ^ title_format.same_line_with_content) &&
+           fz_abs(indent - title_format.indent) < TITLE_FORMAT_INDENT_DELTA;
 }
 
 bool PDF_Title_Format::operator!=(const PDF_Title_Format& title_format) {
@@ -69,7 +70,8 @@ bool PDF_Title_Format::operator!=(const PDF_Title_Format& title_format) {
            prefix != title_format.prefix ||
            emphasize_style != title_format.emphasize_style ||
            numbering_level != title_format.numbering_level ||
-           (same_line_with_content ^ title_format.same_line_with_content);
+           (same_line_with_content ^ title_format.same_line_with_content) ||
+           fz_abs(indent - title_format.indent) >= TITLE_FORMAT_INDENT_DELTA;
 }
 
 std::ostream& operator<<(std::ostream& os, const PDF_Title_Format& tf) {
@@ -124,6 +126,8 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
         return std::nullopt;
     }
 
+    std::list<TextBlockInformation> textblock_list;
+
     for (page_number = 0; page_number < page_count; ++page_number) {
 
         fz_page* page = fz_load_page(ctx, doc, page_number);
@@ -164,7 +168,6 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                     TextBlockInformation text_block_information;
                     std::optional<std::string> title_prefix = std::nullopt;
                     std::optional<fz_font*> title_font = std::nullopt;
-                    std::optional<double> title_indent = std::nullopt, title_baseline = std::nullopt;
                     std::stringstream partial_paragraph_content_string_stream;
                     std::stringstream emphasized_word_string_stream;
                     bool parsing_emphasized_word = false;
@@ -361,19 +364,37 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                     }
                     trim(text_block_information.partial_paragraph_content);
 
+                    if (text_block_information.title_format) {
+                        // indent
+                        text_block_information.title_format.value().indent = (double)(block->u.t.first_line->bbox.x0);
 
+                        // case
+                        if (is_all_upper_case(text_block_information.emphasized_words.front())) {
+                            text_block_information.title_format->title_case = PDF_Title_Format::CASE::ALL_UPPER;
+                            text_block_information.title_format->same_line_with_content = false;
+                        }
 
+                        // numbering level
+                        if (text_block_information.title_format->prefix == PDF_Title_Format::PREFIX::NUMBER_DOT_NUMBERING) {
+                            // count number of number groups
+                            std::stringstream title_prefix_stringstream(title_prefix.value());
+                            std::string segment;
+                            unsigned int number_of_segments = 0;
 
+                            while(std::getline(title_prefix_stringstream, segment, '.')) {
+                               if (segment[0] != ' ') {
+                                   number_of_segments++;
+                               }
+                            }
 
-                    std::cout << "Emphasized words: ";
-                    for (auto it = text_block_information.emphasized_words.begin(); it != text_block_information.emphasized_words.end(); ++it ) {
-                        std::cout << "\"" << *it << "\", ";
+                            text_block_information.title_format->numbering_level = number_of_segments;
+                        }
+
+                        // title font
+                        text_block_information.title_format->title_font = title_font.value();
                     }
-                    std::cout << "\nContent: " << text_block_information.partial_paragraph_content << std::endl;
-                    std::cout << "\n---------------------------------------------------------\n" << std::endl;
 
-
-
+                    textblock_list.push_back(text_block_information);
                 }
 
                 prev_block = block;
@@ -392,8 +413,41 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
         fz_drop_page(ctx, page);
     }
 
+    for (TextBlockInformation& textblock : textblock_list) {
+        std::cout << "Emphasized words: ";
+        for (auto it = textblock.emphasized_words.begin(); it != textblock.emphasized_words.end(); ++it ) {
+            std::cout << "\"" << *it << "\", ";
+        }
+        std::cout << "\nContent: " << textblock.partial_paragraph_content << std::endl;
+        std::cout << "\n---------------------------------------------------------\n" << std::endl;
+
+    }
+
     /* Clean up. */
     fz_drop_document(ctx, doc);
     fz_drop_context(ctx);
     return pdf_document;
+}
+
+TextBlockInformation::TextBlockInformation()
+{
+
+}
+
+TextBlockInformation::TextBlockInformation(const TextBlockInformation &text_block_information) :
+    emphasized_words(text_block_information.emphasized_words),
+    partial_paragraph_content(text_block_information.partial_paragraph_content)
+{
+    if (text_block_information.title_format) {
+        title_format = text_block_information.title_format.value();
+    }
+}
+
+TextBlockInformation::TextBlockInformation(TextBlockInformation &&text_block_information) :
+    emphasized_words(std::move(text_block_information.emphasized_words)),
+    partial_paragraph_content(std::move(text_block_information.partial_paragraph_content))
+{
+    if (text_block_information.title_format) {
+        title_format = text_block_information.title_format.value();
+    }
 }
