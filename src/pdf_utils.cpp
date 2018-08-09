@@ -204,7 +204,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                     }
                                 }
                             } else {
-                                if (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font)) {
+                                if (!isspace(ch->c) && (fz_font_is_bold(ctx, ch->font) || fz_font_is_italic(ctx, ch->font))) {
                                     parsing_emphasized_word = true;
                                     // first time this occured
                                     if (!title_prefix) {
@@ -230,6 +230,10 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 
                             // add character to partial paragraph content
                             partial_paragraph_content_string_stream << character;
+
+                            if (partial_paragraph_content_string_stream.str().compare(" ") == 0) {
+                                partial_paragraph_content_string_stream.str(std::string());
+                            }
 
                             if (!isspace(ch->c)) {
                                 prev_ch_font = ch->font;
