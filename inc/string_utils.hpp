@@ -2,6 +2,8 @@
 
 #include <string>
 #include <algorithm>
+#include <nlohmann/json.hpp>
+#include "pdf_utils.hpp"
 
 // trim from start (in place)
 inline void ltrim(std::string& s) {
@@ -71,3 +73,7 @@ inline std::string UnicodeToUTF8(int codepoint) {
     }
     return out;
 }
+
+nlohmann::json add_json_node(PDF_Section_Node& node, unsigned int& id);
+
+std::string format_pdf_document_tree(PDF_Section_Node& doc_root);

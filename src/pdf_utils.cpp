@@ -547,3 +547,57 @@ TextBlockInformation::TextBlockInformation(TextBlockInformation &&text_block_inf
         title_format = text_block_information.title_format.value();
     }
 }
+
+PDF_Section_Node construct_document_tree(PDF_Document &document)
+{
+    PDF_Section root_section;
+    root_section.id = 0;
+    root_section.title = document.document_info.title;
+    root_section.paragraphs = document.prefix_content;
+
+    PDF_Section_Node doc_root;
+    doc_root.main_section = &root_section;
+    doc_root.parent_node = nullptr;
+    std::list<PDF_Title_Format> title_format_stack;
+    PDF_Section_Node* current_node = &doc_root;
+
+    for (PDF_Section& section : document.sections) {
+        // if this section's title format hasn't appear in title_format_stack
+        std::list<PDF_Title_Format>::iterator it = std::find(title_format_stack.begin(), title_format_stack.end(), section.title_format);
+
+        // create subnode
+        PDF_Section_Node node;
+        node.main_section = &section;
+
+        if (it == title_format_stack.end()) { // not exist yet, create a subnode to add it to current node
+            // add to current node
+            if (!current_node->sub_sections) {
+                current_node->sub_sections = std::list<PDF_Section_Node>();
+            }
+            node.parent_node = current_node;
+            current_node->sub_sections.value().push_back(std::move(node));
+
+            current_node = &(current_node->sub_sections.value().front());
+            title_format_stack.push_back(section.title_format);
+        } else {
+            // Up until this title_format is the last element
+            // save the iterator
+            std::list<PDF_Title_Format>::iterator tmp_it = it;
+            // it modified
+            while (it != title_format_stack.end()){
+                current_node = current_node->parent_node;
+                ++it;
+            }
+            // it = end() here
+            ++tmp_it;
+            title_format_stack.erase(tmp_it, it);
+
+            node.parent_node = current_node;
+
+            current_node->sub_sections.value().push_back(std::move(node));
+            current_node = &(current_node->sub_sections.value().back());
+        }
+    }
+
+    return doc_root;
+}

@@ -51,7 +51,6 @@ struct PDF_Section {
     std::string title;
     PDF_Title_Format title_format;
     std::list<PDF_Paragraph> paragraphs;
-    std::optional<std::list<PDF_Section>> sub_sections;
 };
 
 struct PDF_Document_Info {
@@ -73,6 +72,12 @@ struct PDF_Document {
     std::list<PDF_Section> sections;
 };
 
+struct PDF_Section_Node {
+    PDF_Section* main_section;
+    std::optional<std::list<PDF_Section_Node>> sub_sections;
+    PDF_Section_Node* parent_node;
+};
+
 struct TextBlockInformation {
     std::optional<PDF_Title_Format> title_format = std::nullopt;
     std::list<std::string> emphasized_words;
@@ -88,3 +93,5 @@ struct TextBlockInformation {
 
 // return nullopt if cant read pdf document
 std::optional<PDF_Document> parse_pdf_file(std::string file_path);
+
+PDF_Section_Node construct_document_tree(PDF_Document& document);
