@@ -464,7 +464,56 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
         pdf_document.sections.push_back(pdf_section);
     }
 
+    // add pdf document information
+    char meta_format[200];
+    if (fz_lookup_metadata(ctx, doc, FZ_META_FORMAT, meta_format, sizeof(meta_format)) > 0) {
+        pdf_document.document_info.format = meta_format;
+    }
 
+    char meta_encryption[200];
+    if (fz_lookup_metadata(ctx, doc, FZ_META_ENCRYPTION, meta_encryption, sizeof(meta_encryption)) > 0) {
+        pdf_document.document_info.encryption = meta_encryption;
+    }
+
+    char meta_title[200];
+    if (fz_lookup_metadata(ctx, doc, FZ_META_INFO_TITLE, meta_title, sizeof(meta_title)) > 0) {
+        pdf_document.document_info.title = meta_title;
+    }
+
+    char meta_author[200];
+    if (fz_lookup_metadata(ctx, doc, FZ_META_INFO_AUTHOR, meta_author, sizeof(meta_author)) > 0) {
+        pdf_document.document_info.author = meta_author;
+    }
+
+    char meta_subject[200];
+    if (fz_lookup_metadata(ctx, doc, "info:Subject", meta_subject, sizeof(meta_subject)) > 0) {
+        pdf_document.document_info.subject = meta_subject;
+    }
+
+    char meta_keywords[200];
+    if (fz_lookup_metadata(ctx, doc, "info:Keywords", meta_keywords, sizeof(meta_keywords)) > 0) {
+        pdf_document.document_info.keywords = meta_keywords;
+    }
+
+    char meta_creator[200];
+    if (fz_lookup_metadata(ctx, doc, "info:Creator", meta_creator, sizeof(meta_creator)) > 0) {
+        pdf_document.document_info.creator = meta_creator;
+    }
+
+    char meta_producer[200];
+    if (fz_lookup_metadata(ctx, doc, "info:Producer", meta_producer, sizeof(meta_producer)) > 0) {
+        pdf_document.document_info.producer = meta_producer;
+    }
+
+    char meta_creation_date[200];
+    if (fz_lookup_metadata(ctx, doc, "info:CreationDate", meta_creation_date, sizeof(meta_creation_date)) > 0) {
+        pdf_document.document_info.create_date = meta_creation_date;
+    }
+
+    char meta_modification_date[200];
+    if (fz_lookup_metadata(ctx, doc, "info:ModDate", meta_modification_date, sizeof(meta_modification_date)) > 0) {
+        pdf_document.document_info.modified_date = meta_modification_date;
+    }
 
     /* Clean up. */
     fz_drop_document(ctx, doc);

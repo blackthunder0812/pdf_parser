@@ -55,10 +55,8 @@ struct PDF_Section {
 };
 
 struct PDF_Document_Info {
-    struct PDF_Document_Version {
-        unsigned int major_version;
-        unsigned int minor_version;
-    } version;
+    std::string format;
+    std::string encryption;
     std::string title;
     std::string author;
     std::string subject;
