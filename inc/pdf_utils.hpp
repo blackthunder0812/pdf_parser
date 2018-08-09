@@ -71,7 +71,7 @@ struct PDF_Document_Info {
 
 struct PDF_Document {
     PDF_Document_Info document_info;
-    std::optional<std::list<PDF_Paragraph>> prefix_content;
+    std::list<PDF_Paragraph> prefix_content;
     std::list<PDF_Section> sections;
 };
 
@@ -79,6 +79,9 @@ struct TextBlockInformation {
     std::optional<PDF_Title_Format> title_format = std::nullopt;
     std::list<std::string> emphasized_words;
     std::string partial_paragraph_content;
+
+    unsigned int page;
+    fz_rect bbox;
 
     TextBlockInformation();
     TextBlockInformation(const TextBlockInformation &text_block_information);

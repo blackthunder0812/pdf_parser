@@ -86,8 +86,7 @@ std::ostream& operator<<(std::ostream& os, const PDF_Title_Format& tf) {
 }
 
 std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
-    PDF_Document pdf_document;
-    int page_number, page_count = 0;
+    unsigned int page_number, page_count = 0;
     fz_context* ctx = nullptr;
     fz_document* doc = nullptr;
 
@@ -118,7 +117,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 
     /* Count the number of pages. */
     fz_try(ctx) {
-        page_count = fz_count_pages(ctx, doc);
+        page_count = (unsigned int)(fz_count_pages(ctx, doc));
     } fz_catch(ctx) {
         fprintf(stderr, "cannot count number of pages: %s\n", fz_caught_message(ctx));
         fz_drop_document(ctx, doc);
@@ -394,6 +393,8 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                         text_block_information.title_format->title_font = title_font.value();
                     }
 
+                    text_block_information.page = page_number;
+                    text_block_information.bbox = block->bbox;
                     textblock_list.push_back(text_block_information);
                 }
 
@@ -413,15 +414,53 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
         fz_drop_page(ctx, page);
     }
 
+    PDF_Document pdf_document;
+    PDF_Section pdf_section;
     for (TextBlockInformation& textblock : textblock_list) {
-        std::cout << "Emphasized words: ";
-        for (auto it = textblock.emphasized_words.begin(); it != textblock.emphasized_words.end(); ++it ) {
-            std::cout << "\"" << *it << "\", ";
-        }
-        std::cout << "\nContent: " << textblock.partial_paragraph_content << std::endl;
-        std::cout << "\n---------------------------------------------------------\n" << std::endl;
+        PDF_Paragraph p;
+        if (textblock.title_format) {
+            if (pdf_section.title.length() > 0) { // save old section
+                pdf_document.sections.push_back(pdf_section);
+            }
 
+            pdf_section.title = textblock.emphasized_words.front();
+
+            // linhlt: remove double quote inside title string
+            if (pdf_section.title[0] == '"' && pdf_section.title[pdf_section.title.length() - 1] == '"') {
+                pdf_section.title.pop_back();
+                pdf_section.title.erase(pdf_section.title.begin());
+
+                textblock.title_format.value().emphasize_style = PDF_Title_Format::EMPHASIZE_STYLE::DOUBLE_QUOTE;
+            }
+
+            pdf_section.title_format = textblock.title_format.value();
+            textblock.emphasized_words.pop_front();
+            p.emphasized_words = textblock.emphasized_words;
+            pdf_section.paragraphs.clear();
+            if (textblock.partial_paragraph_content.length() > 0) {
+                p.paragraph = textblock.partial_paragraph_content;
+                pdf_section.paragraphs.push_back(p);
+            }
+        } else if (pdf_section.title.length() > 0) {
+            p.emphasized_words = textblock.emphasized_words;
+            if (textblock.partial_paragraph_content.length() > 0) {
+                p.paragraph = textblock.partial_paragraph_content;
+                pdf_section.paragraphs.push_back(p);
+            }
+        } else {
+            p.emphasized_words = textblock.emphasized_words;
+            if (textblock.partial_paragraph_content.length() > 0) {
+                p.paragraph = textblock.partial_paragraph_content;
+            }
+            pdf_document.prefix_content.push_back(p);
+        }
     }
+
+    if (pdf_section.title.length() > 0) { // last one
+        pdf_document.sections.push_back(pdf_section);
+    }
+
+
 
     /* Clean up. */
     fz_drop_document(ctx, doc);
@@ -436,7 +475,9 @@ TextBlockInformation::TextBlockInformation()
 
 TextBlockInformation::TextBlockInformation(const TextBlockInformation &text_block_information) :
     emphasized_words(text_block_information.emphasized_words),
-    partial_paragraph_content(text_block_information.partial_paragraph_content)
+    partial_paragraph_content(text_block_information.partial_paragraph_content),
+    page(text_block_information.page),
+    bbox(text_block_information.bbox)
 {
     if (text_block_information.title_format) {
         title_format = text_block_information.title_format.value();
@@ -445,7 +486,9 @@ TextBlockInformation::TextBlockInformation(const TextBlockInformation &text_bloc
 
 TextBlockInformation::TextBlockInformation(TextBlockInformation &&text_block_information) :
     emphasized_words(std::move(text_block_information.emphasized_words)),
-    partial_paragraph_content(std::move(text_block_information.partial_paragraph_content))
+    partial_paragraph_content(std::move(text_block_information.partial_paragraph_content)),
+    page(text_block_information.page),
+    bbox(text_block_information.bbox)
 {
     if (text_block_information.title_format) {
         title_format = text_block_information.title_format.value();
