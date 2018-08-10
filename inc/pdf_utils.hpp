@@ -94,4 +94,4 @@ struct TextBlockInformation {
 // return nullopt if cant read pdf document
 std::optional<PDF_Document> parse_pdf_file(std::string file_path);
 
-PDF_Section_Node construct_document_tree(PDF_Document& document);
+PDF_Section_Node construct_document_tree(PDF_Document& document, PDF_Section &root_section);

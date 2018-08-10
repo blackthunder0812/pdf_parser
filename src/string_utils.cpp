@@ -33,5 +33,5 @@ std::string format_pdf_document_tree(PDF_Section_Node &doc_root)
     // present as tree
     unsigned int start_id = 0;
     nlohmann::json json_pdf_document = add_json_node(doc_root, start_id);
-    return json_pdf_document.dump();
+    return json_pdf_document.dump(2);
 }

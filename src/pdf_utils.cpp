@@ -548,13 +548,8 @@ TextBlockInformation::TextBlockInformation(TextBlockInformation &&text_block_inf
     }
 }
 
-PDF_Section_Node construct_document_tree(PDF_Document &document)
+PDF_Section_Node construct_document_tree(PDF_Document &document, PDF_Section &root_section)
 {
-    PDF_Section root_section;
-    root_section.id = 0;
-    root_section.title = document.document_info.title;
-    root_section.paragraphs = document.prefix_content;
-
     PDF_Section_Node doc_root;
     doc_root.main_section = &root_section;
     doc_root.parent_node = nullptr;
