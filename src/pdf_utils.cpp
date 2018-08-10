@@ -294,8 +294,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                 } // article numbering A/a/An/an/The/the
                                 else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("[Aa]n?|[Tt]he"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::ARTICLE;
-                                }
-                                else { // not bullet or numbering
+                                } else { // not bullet or numbering
                                     has_title_format = false;
                                 }
 
@@ -369,7 +368,11 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
 
                     if (text_block_information.title_format) {
                         // indent
-                        text_block_information.title_format.value().indent = (double)(block->u.t.first_line->bbox.x0);
+                        if (is_all_upper_case(text_block_information.emphasized_words.front())) {
+                            text_block_information.title_format.value().indent = 0;
+                        } else {
+                            text_block_information.title_format.value().indent = (double)(block->u.t.first_line->bbox.x0);
+                        }
 
                         // case
                         if (is_all_upper_case(text_block_information.emphasized_words.front())) {
@@ -384,10 +387,10 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                             std::string segment;
                             unsigned int number_of_segments = 0;
 
-                            while(std::getline(title_prefix_stringstream, segment, '.')) {
-                               if (segment[0] != ' ') {
-                                   number_of_segments++;
-                               }
+                            while (std::getline(title_prefix_stringstream, segment, '.')) {
+                                if (segment[0] != ' ') {
+                                    number_of_segments++;
+                                }
                             }
 
                             text_block_information.title_format->numbering_level = number_of_segments;
@@ -521,35 +524,31 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
     return pdf_document;
 }
 
-TextBlockInformation::TextBlockInformation()
-{
+TextBlockInformation::TextBlockInformation() {
 
 }
 
-TextBlockInformation::TextBlockInformation(const TextBlockInformation &text_block_information) :
+TextBlockInformation::TextBlockInformation(const TextBlockInformation& text_block_information) :
     emphasized_words(text_block_information.emphasized_words),
     partial_paragraph_content(text_block_information.partial_paragraph_content),
     page(text_block_information.page),
-    bbox(text_block_information.bbox)
-{
+    bbox(text_block_information.bbox) {
     if (text_block_information.title_format) {
         title_format = text_block_information.title_format.value();
     }
 }
 
-TextBlockInformation::TextBlockInformation(TextBlockInformation &&text_block_information) :
+TextBlockInformation::TextBlockInformation(TextBlockInformation&& text_block_information) :
     emphasized_words(std::move(text_block_information.emphasized_words)),
     partial_paragraph_content(std::move(text_block_information.partial_paragraph_content)),
     page(text_block_information.page),
-    bbox(text_block_information.bbox)
-{
+    bbox(text_block_information.bbox) {
     if (text_block_information.title_format) {
         title_format = text_block_information.title_format.value();
     }
 }
 
-PDF_Section_Node construct_document_tree(PDF_Document &document, PDF_Section &root_section)
-{
+PDF_Section_Node construct_document_tree(PDF_Document& document, PDF_Section& root_section) {
     PDF_Section_Node doc_root;
     doc_root.main_section = &root_section;
     doc_root.parent_node = nullptr;
@@ -579,7 +578,7 @@ PDF_Section_Node construct_document_tree(PDF_Document &document, PDF_Section &ro
             // save the iterator
             std::list<PDF_Title_Format>::iterator tmp_it = it;
             // it modified
-            while (it != title_format_stack.end()){
+            while (it != title_format_stack.end()) {
                 current_node = current_node->parent_node;
                 ++it;
             }
