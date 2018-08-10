@@ -10,10 +10,10 @@ nlohmann::json add_json_node(PDF_Section_Node &current_node, unsigned int &id)
     if (current_node.parent_node) {
         json_pdf_section["parent_id"] = current_node.parent_node->main_section->id;
     }
-    for (PDF_Paragraph paragraph : current_node.main_section->paragraphs) {
+    for (PDF_Paragraph& paragraph : current_node.main_section->paragraphs) {
         nlohmann::json json_pdf_paragraph;
         json_pdf_paragraph["paragraph"] = paragraph.paragraph;
-        for (std::string emphasized_word : paragraph.emphasized_words) {
+        for (std::string& emphasized_word : paragraph.emphasized_words) {
             json_pdf_paragraph["keywords"] += emphasized_word;
         }
         json_pdf_section["paragraphs"] += json_pdf_paragraph;
@@ -33,5 +33,5 @@ std::string format_pdf_document_tree(PDF_Section_Node &doc_root)
     // present as tree
     unsigned int start_id = 0;
     nlohmann::json json_pdf_document = add_json_node(doc_root, start_id);
-    return json_pdf_document.dump(2);
+    return json_pdf_document.dump();
 }
