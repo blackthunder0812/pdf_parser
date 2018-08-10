@@ -156,7 +156,7 @@ void http_worker::process_request(boost::beast::http::request<request_body_t, bo
                     std::strcpy(user_password, params.at("upw").c_str());
                 }
 
-                std::optional<PDF_Document> pdf_doc = parse_pdf_file(params.at("path"));
+                std::optional<PDF_Document> pdf_doc = parse_pdf_file(request_path);
                 PDF_Section_Node doc_root;
                 PDF_Document pdf_document;
                 PDF_Section root_section;
