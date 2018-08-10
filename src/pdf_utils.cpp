@@ -277,7 +277,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                                 bool has_title_format = true;
 
                                 // bullet match
-                                if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("•|[\\*\\+\\-]"))) {
+                                if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("|o|•|[\\*\\+\\-]"))) {
                                     title_format.prefix = PDF_Title_Format::PREFIX::BULLET;
                                 } // numbering using latin characters (a) (b) (c)
                                 else if (std::regex_match(first_word_title_prefix_view, title_prefix_match_result, std::regex("\\([a-z]{1,2}\\)"))) {
