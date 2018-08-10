@@ -426,6 +426,11 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
     for (TextBlockInformation& textblock : textblock_list) {
         PDF_Paragraph p;
         if (textblock.title_format) {
+
+            if (pdf_section.title.compare("Subordinated Investment Management Fee:") == 0) {
+                std::cout << "break point";
+            }
+
             if (pdf_section.title.length() > 0) { // save old section
                 pdf_document.sections.push_back(pdf_section);
             }
@@ -433,7 +438,7 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
             pdf_section.title = textblock.emphasized_words.front();
 
             // linhlt: remove double quote inside title string
-            if (pdf_section.title[0] == '"' && pdf_section.title[pdf_section.title.length() - 1] == '"') {
+            if (pdf_section.title.length() > 2 && pdf_section.title[0] == '"' && pdf_section.title[pdf_section.title.length() - 1] == '"') {
                 pdf_section.title.pop_back();
                 pdf_section.title.erase(pdf_section.title.begin());
 
