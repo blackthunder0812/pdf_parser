@@ -7,7 +7,7 @@
 #include <mupdf/fitz.h>
 
 #ifndef TITLE_FORMAT_INDENT_DELTA
-#define TITLE_FORMAT_INDENT_DELTA 3.0
+#define TITLE_FORMAT_INDENT_DELTA 10.0
 #endif
 
 #ifndef TITLE_MAX_LENGTH
