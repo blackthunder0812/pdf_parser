@@ -371,7 +371,20 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                         if (is_all_upper_case(text_block_information.emphasized_words.front())) {
                             text_block_information.title_format.value().indent = 0;
                         } else {
-                            text_block_information.title_format.value().indent = (double)(block->u.t.first_line->bbox.x0);
+                            // first character which is not space
+                            bool has_indent = false;
+                            for (fz_stext_line *l = block->u.t.first_line; l; l = l->next) {
+                                for (fz_stext_char *c = l->first_char; c; c = c->next) {
+                                    if (!isspace(c->c)) {
+                                        text_block_information.title_format.value().indent = (double)(c->origin.x);
+                                        has_indent = true;
+                                        break;
+                                    }
+                                }
+                                if (has_indent) {
+                                    break;
+                                }
+                            }
                         }
 
                         // case
@@ -426,11 +439,6 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
     for (TextBlockInformation& textblock : textblock_list) {
         PDF_Paragraph p;
         if (textblock.title_format) {
-
-            if (pdf_section.title.compare("Subordinated Investment Management Fee:") == 0) {
-                std::cout << "break point";
-            }
-
             if (pdf_section.title.length() > 0) { // save old section
                 pdf_document.sections.push_back(pdf_section);
             }
