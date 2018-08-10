@@ -373,8 +373,8 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
                         } else {
                             // first character which is not space
                             bool has_indent = false;
-                            for (fz_stext_line *l = block->u.t.first_line; l; l = l->next) {
-                                for (fz_stext_char *c = l->first_char; c; c = c->next) {
+                            for (fz_stext_line* l = block->u.t.first_line; l; l = l->next) {
+                                for (fz_stext_char* c = l->first_char; c; c = c->next) {
                                     if (!isspace(c->c)) {
                                         text_block_information.title_format.value().indent = (double)(c->origin.x);
                                         has_indent = true;
@@ -471,8 +471,8 @@ std::optional<PDF_Document> parse_pdf_file(std::string file_path) {
             p.emphasized_words = textblock.emphasized_words;
             if (textblock.partial_paragraph_content.length() > 0) {
                 p.paragraph = textblock.partial_paragraph_content;
+                pdf_document.prefix_content.push_back(p);
             }
-            pdf_document.prefix_content.push_back(p);
         }
     }
 
@@ -569,6 +569,7 @@ PDF_Section_Node construct_document_tree(PDF_Document& document, PDF_Section& ro
     PDF_Section_Node* current_node = &doc_root;
 
     for (PDF_Section& section : document.sections) {
+
         // if this section's title format hasn't appear in title_format_stack
         std::list<PDF_Title_Format>::iterator it = std::find(title_format_stack.begin(), title_format_stack.end(), section.title_format);
 
